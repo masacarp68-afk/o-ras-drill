@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>オーラス条件ドリル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#E7EDEA; --surface:#F7FAF9; --surface-2:#EDF2F0; --ink:#15211D; --muted:#586964; --line:#C6D2CE;
+  --felt:#1F5B53; --felt-deep:#164640; --felt-ink:#EAF4F1; --felt-muted:#A5C8C0;
+  --panel:#0C1311; --panel-line:#26332F; --led:#FFB547; --led-soft:#A57A33; --led-red:#FF6A5F;
+  --stick:#FBFAF5; --dot:#D0333E;
+  --accent:#1F5B53; --accent-ink:#FFFFFF; --accent-soft:#D5E6E2;
+  --ok:#1F7F55; --ok-bg:#D6EDE1; --cont:#9A6B09; --cont-bg:#F4E6C2; --ng:#BF383E; --ng-bg:#F5D9DA;
+  --target:#C9343C;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Meiryo",system-ui,sans-serif;
+  --led-font:"DotGothic16","MS Gothic",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1513; --surface:#151F1C; --surface-2:#1B2723; --ink:#E3ECE9; --muted:#8FA29C; --line:#2B3A35;
+    --felt:#1A4C45; --felt-deep:#113630; --felt-ink:#E3EFEC; --felt-muted:#86AAA2;
+    --panel:#050908; --panel-line:#1F2B27;
+    --accent:#58AE9F; --accent-ink:#04110E; --accent-soft:#1C3A34;
+    --ok:#5CC495; --ok-bg:#15352A; --cont:#E2B24C; --cont-bg:#382D13; --ng:#EF6C70; --ng-bg:#3C1C1E;
+    --target:#F0676E;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1513; --surface:#151F1C; --surface-2:#1B2723; --ink:#E3ECE9; --muted:#8FA29C; --line:#2B3A35;
+  --felt:#1A4C45; --felt-deep:#113630; --felt-ink:#E3EFEC; --felt-muted:#86AAA2;
+  --panel:#050908; --panel-line:#1F2B27;
+  --accent:#58AE9F; --accent-ink:#04110E; --accent-soft:#1C3A34;
+  --ok:#5CC495; --ok-bg:#15352A; --cont:#E2B24C; --cont-bg:#382D13; --ng:#EF6C70; --ng-bg:#3C1C1E;
+  --target:#F0676E;
+}
+
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;padding:0 16px;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{max-width:1120px;margin:0 auto;padding-block:20px 40px;display:flex;flex-direction:column;gap:18px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.brand h1{font-family:var(--display);font-weight:400;font-size:26px;line-height:1.2;margin:0;letter-spacing:.02em;text-wrap:balance}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:500;user-select:none}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch .track{width:38px;height:22px;border-radius:11px;background:var(--line);position:relative;transition:background .15s}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.switch input:checked + .track{background:var(--accent)}
+.switch input:checked + .track::after{transform:translateX(16px)}
+.switch input:focus-visible + .track{outline:2px solid var(--accent);outline-offset:2px}
+.sel{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+.sel select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+
+.stats{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 22px;padding:10px 0;border-block:1px solid var(--line);font-size:13px;color:var(--muted)}
+.stats b{font-size:17px;color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums;margin-left:6px}
+.stats .reset{margin-left:auto;background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-size:12px;padding:0}
+
+.grid{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.board{max-width:460px;width:100%;margin:0 auto}}
+
+/* table */
+.board{display:flex;flex-direction:column;gap:10px}
+.table{container-type:inline-size;aspect-ratio:1;width:100%;max-width:100%;border-radius:20px;padding:6px;
+  background:radial-gradient(circle at 50% 45%, var(--felt) 0%, var(--felt) 55%, var(--felt-deep) 100%);
+  box-shadow:inset 0 0 0 6px var(--felt-deep), 0 10px 30px -18px rgba(0,0,0,.6);
+  display:grid;grid-template-columns:1fr 2.8fr 1fr;grid-template-rows:1fr 2.8fr 1fr;
+  grid-template-areas:". top ." "left panel right" ". bottom .";color:var(--felt-ink)}
+.seat{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;min-width:0;padding:4px}
+.seat.p0{grid-area:bottom}.seat.p1{grid-area:right}.seat.p2{grid-area:top}.seat.p3{grid-area:left}
+.seat-name{font-weight:700;font-size:max(12px,3.4cqi);line-height:1.2;white-space:nowrap}
+.seat-name small{display:block;font-weight:500;font-size:max(10px,2.6cqi);color:var(--felt-muted)}
+.seat-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:3px}
+.tag{font-size:max(10px,2.5cqi);line-height:1;padding:3px 5px;border-radius:4px;border:1px solid var(--felt-muted);color:var(--felt-ink);white-space:nowrap}
+.tag.rank{background:var(--felt-ink);color:var(--felt-deep);border-color:var(--felt-ink);font-weight:700}
+.tag.tgt{background:var(--dot);border-color:var(--dot);color:#fff;font-weight:700}
+.tag.from{border-style:dashed}
+.riichi{display:flex;align-items:center;gap:4px;font-size:max(10px,2.5cqi);color:var(--felt-ink)}
+
+.stick{display:inline-block;width:max(34px,10cqi);height:max(6px,1.7cqi);border-radius:99px;background:var(--stick);position:relative;box-shadow:0 1px 0 rgba(0,0,0,.35);flex:none}
+.stick.r1000::after{content:"";position:absolute;left:50%;top:50%;width:max(4px,1.2cqi);height:max(4px,1.2cqi);border-radius:50%;background:var(--dot);transform:translate(-50%,-50%)}
+.stick.h100::before,.stick.h100::after{content:"";position:absolute;top:50%;width:28%;height:40%;transform:translateY(-50%);
+  background-image:radial-gradient(circle,#1d1d1d 42%,transparent 48%);background-size:25% 100%;background-repeat:repeat-x}
+.stick.h100::before{left:10%}.stick.h100::after{right:10%}
+
+.panel{grid-area:panel;background:var(--panel);border-radius:12px;box-shadow:inset 0 0 0 1px var(--panel-line), 0 0 0 3px rgba(0,0,0,.25);
+  display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto 1fr auto;grid-template-areas:". pt ." "pl pc pr" ". pb .";
+  padding:3cqi;column-gap:2cqi;font-family:var(--led-font);color:var(--led)}
+.ps{display:flex;align-items:center;justify-content:center;gap:1.2cqi;line-height:1}
+.ps.p0{grid-area:pb}.ps.p1{grid-area:pr;flex-direction:column}.ps.p2{grid-area:pt}.ps.p3{grid-area:pl;flex-direction:column}
+.ps .w{font-size:3.6cqi;color:var(--led-soft)}
+.ps .w.dealer{color:var(--led-red)}
+.num{font-size:4.9cqi;letter-spacing:.02em;text-shadow:0 0 6px rgba(255,181,71,.45);font-variant-numeric:tabular-nums}
+.ps.me .num{color:#FFE2A8}
+.pc{grid-area:pc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2cqi;min-width:0}
+.round{font-size:6.4cqi;text-shadow:0 0 8px rgba(255,181,71,.5);white-space:nowrap}
+.pots{display:flex;flex-direction:column;gap:1.4cqi;font-size:3.3cqi;color:var(--led)}
+.pot{display:flex;align-items:center;gap:1.6cqi;white-space:nowrap}
+.pot .stick{width:8cqi;height:1.5cqi}
+.board .note{margin:0;font-size:12px;color:var(--muted)}
+
+/* question */
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.q-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.steps{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:10px}
+.step{border:0;background:transparent;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.step:disabled{cursor:default;opacity:.55}
+.step.is-current{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.step .mk{font-size:12px;min-width:1em}
+.step .mk.ok{color:var(--ok)}.step .mk.ng{color:var(--ng)}
+.timer{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.q-title{font-size:21px;line-height:1.35;margin:0;font-weight:700;text-wrap:balance}
+.q-title .who{color:var(--target)}
+.q-sub{margin:-8px 0 0;font-size:13px;color:var(--muted)}
+
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
+.chip{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 12px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;transition:border-color .12s, background .12s}
+.chip:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+.chip:disabled{cursor:default}
+.chip .v{font-weight:700;font-size:14.5px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.25;white-space:nowrap}
+.chip .s{font-size:11px;color:var(--muted);line-height:1.3;white-space:nowrap}
+.chip.wide{grid-column:span 2}
+.chip .mark{position:absolute;top:1px;right:4px;font-size:10px;font-weight:700;line-height:1.2}
+.answered .chip.st-no{opacity:.5}
+.answered .chip.st-up{background:var(--ok-bg);border-color:transparent}
+.answered .chip.st-up .mark{color:var(--ok)}
+.answered .chip.st-cont{background:var(--cont-bg);border-color:transparent}
+.answered .chip.st-cont .mark{color:var(--cont)}
+.answered .chip.is-correct{box-shadow:0 0 0 2px var(--ok);opacity:1}
+.answered .chip.is-picked.is-wrong{box-shadow:0 0 0 2px var(--ng);opacity:1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.legend .l-up::before{background:var(--ok-bg);box-shadow:inset 0 0 0 1px var(--ok)}
+.legend .l-cont::before{background:var(--cont-bg);box-shadow:inset 0 0 0 1px var(--cont)}
+.legend .l-no::before{background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+
+.feedback{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:14px}
+.verdict{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
+.verdict .big{font-family:var(--display);font-size:24px;line-height:1.2}
+.verdict .big.ok{color:var(--ok)}.verdict .big.ng{color:var(--ng)}
+.verdict .ans{font-weight:700}
+.verdict .ans small{font-weight:400;color:var(--muted);margin-left:6px}
+.calc{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px;font-variant-numeric:tabular-nums}
+.calc li{padding-left:14px;position:relative}
+.calc li::before{content:"";position:absolute;left:2px;top:.72em;width:5px;height:5px;border-radius:50%;background:var(--muted)}
+.calc .res-ok{color:var(--ok);font-weight:700}.calc .res-ng{color:var(--ng);font-weight:700}.calc .res-cont{color:var(--cont);font-weight:700}
+.calc .memo{color:var(--muted);font-size:13px}
+.tbl-wrap{overflow-x:auto}
+table.after{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+table.after caption{text-align:left;font-size:12px;color:var(--muted);padding-bottom:4px}
+table.after th,table.after td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.after th:first-child,table.after td:first-child{text-align:left}
+table.after thead th{font-size:12px;font-weight:500;color:var(--muted)}
+table.after tr.me td{font-weight:700}
+.dplus{color:var(--ok)}.dminus{color:var(--ng)}
+.q-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{border-radius:9px;padding:9px 18px;font-weight:700;cursor:pointer;border:1px solid transparent}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--muted);border-color:var(--line);font-weight:500;font-size:13px;padding:7px 12px}
+@media (max-width:480px){.btn.primary{flex:1}}
+
+.rules{border-top:1px solid var(--line);padding-top:14px;font-size:12.5px;color:var(--muted)}
+.rules h2{font-size:13px;margin:0 0 6px;color:var(--ink)}
+.rules ul{margin:0;padding-left:1.2em;columns:2 300px;column-gap:32px}
+.rules li{break-inside:avoid;margin-bottom:2px}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1>オーラス条件ドリル</h1>
+      <p>雀魂 段位戦ルール ／ 子の1局で順位をひとつ上げる最低打点を答える</p>
+    </div>
+    <div class="controls">
+      <label class="switch" for="opt-west"><input type="checkbox" id="opt-west"><span class="track"></span><span>西入あり</span></label>
+      <label class="sel" for="opt-riichi">他家リーチ
+        <select id="opt-riichi">
+          <option value="random">ランダム</option>
+          <option value="always">毎回</option>
+          <option value="off">なし</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <section class="stats" id="stats" aria-label="成績"></section>
+
+  <main class="grid">
+    <section class="board" aria-label="卓">
+      <div class="table" id="table"></div>
+      <p class="note">持ち点はリーチ棒を出した後の点数。供託にはこの局のリーチ棒も含む。</p>
+    </section>
+    <section class="qcard" id="qcard" aria-live="polite"></section>
+  </main>
+
+  <footer class="rules">
+    <h2>この練習で使うルール</h2>
+    <ul>
+      <li>切り上げ満貫なし（30符4翻・60符3翻は7,700／2,000-3,900）</li>
+      <li>積み棒は1本300点（ツモは各100点）、供託はアガった人が総取り</li>
+      <li>同点は起家に近い席が上位</li>
+      <li>出題はすべて南4局。西入ありの場合、アガリ後に30,000点以上がいなければ西入（条件未達として扱う）</li>
+      <li>0点未満でトビ終了</li>
+      <li>自分のリーチ棒はアガれば戻るので、リーチしても条件は変わらない</li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(() => {
+const WINDS = ['東','南','西','北'];
+const REL = ['自分','下家','対面','上家'];
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt = n => n.toLocaleString('ja-JP');
+const rand = n => Math.floor(Math.random() * n);
+const ceil100 = x => Math.ceil(x / 100) * 100;
+function pickW(vals, ws){ const t = ws.reduce((a,b)=>a+b,0); let r = Math.random()*t; for (let i=0;i<vals.length;i++){ r -= ws[i]; if (r < 0) return vals[i]; } return vals[vals.length-1]; }
+function gauss(){ let u=0,v=0; while(!u) u=Math.random(); while(!v) v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+/* ---------- storage (per-viewer convenience) ---------- */
+const KEY = 'orasu-drill-v1';
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ return {}; } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify({settings, stats})); } catch(e){} }
+const stored = load();
+let settings = Object.assign({west:false, riichi:'random'}, stored.settings || {});
+let stats = Object.assign({n:0, ok:0, streak:0, best:0, timeSum:0}, stored.stats || {});
+
+/* ---------- score tables (子) ---------- */
+function pickExample(ex){
+  const pref = ex.find(e => /^(30|40)符/.test(e));
+  if (pref) return pref;
+  return ex.slice().sort((a,b)=>parseInt(a)-parseInt(b))[0];
+}
+const LIMITS = [['満貫',2000],['跳満',3000],['倍満',4000],['三倍満',6000],['役満',8000]];
+const RON = [], TSUMO = [];
+(function build(){
+  const ronFu = {1:[30,40,50,60,70,80,90,100,110],2:[25,30,40,50,60,70,80,90,100,110],3:[25,30,40,50,60],4:[25,30]};
+  const tsuFu = {1:[30,40,50,60,70,80,90,100,110],2:[20,30,40,50,60,70,80,90,100,110],3:[20,25,30,40,50,60],4:[20,25,30]};
+  const ron = new Map(), tsu = new Map();
+  for (const h of [1,2,3,4]){
+    for (const f of ronFu[h]){
+      const b = f * 2 ** (h+2); if (b >= 2000) continue;
+      const v = ceil100(b*4);
+      if (!ron.has(v)) ron.set(v, []);
+      ron.get(v).push(`${f}符${h}翻`);
+    }
+    for (const f of tsuFu[h]){
+      const b = f * 2 ** (h+2); if (b >= 2000) continue;
+      const c = ceil100(b), d = ceil100(b*2), k = c*100000 + d;
+      if (!tsu.has(k)) tsu.set(k, {c, d, ex:[]});
+      tsu.get(k).ex.push(`${f}符${h}翻`);
+    }
+  }
+  [...ron.entries()].sort((a,b)=>a[0]-b[0]).forEach(([v,ex]) => RON.push({value:v, label:String(v), sub:pickExample(ex), ex}));
+  [...tsu.entries()].sort((a,b)=>a[0]-b[0]).forEach(([,o]) => TSUMO.push({c:o.c, d:o.d, label:`${o.c}-${o.d}`, sub:pickExample(o.ex), ex:o.ex}));
+  for (const [name,b] of LIMITS){
+    RON.push({value:b*4, label:String(b*4), sub:name, ex:[name], limit:true});
+    TSUMO.push({c:b, d:b*2, label:`${b}-${b*2}`, sub:name, ex:[name], limit:true});
+  }
+})();
+
+/* ---------- rules ---------- */
+function ranks(scores){
+  const order = [0,1,2,3].sort((a,b) => (scores[b]-scores[a]) || (a-b));
+  const r = []; order.forEach((seat,i) => r[seat] = i+1); return r;
+}
+function applyWin(sc, q, opt){
+  const s = sc.scores.slice(), me = sc.me, h = sc.honba, K = sc.kyotaku;
+  if (q.type === 'tsumo'){
+    let gain = 0;
+    for (let i=0;i<4;i++){ if (i===me) continue; const p = (i===sc.dealer ? opt.d : opt.c) + 100*h; s[i] -= p; gain += p; }
+    s[me] += gain + 1000*K;
+  } else {
+    const p = opt.value + 300*h;
+    s[q.from] -= p; s[me] += p + 1000*K;
+  }
+  return s;
+}
+function gameEnds(sc, after){
+  if (after.some(v => v < 0)) return true;
+  if (!sc.west) return true;
+  if (sc.round.wind === '西' && sc.round.num === 4) return true;
+  return Math.max(...after) >= 30000;
+}
+function evaluate(sc, q, opt){
+  const after = applyWin(sc, q, opt);
+  const rb = ranks(sc.scores), ra = ranks(after);
+  const ends = gameEnds(sc, after);
+  const up = ra[sc.me] < rb[sc.me];
+  return {after, rb, ra, ends, status: up ? (ends ? 'up' : 'cont') : 'no'};
+}
+
+/* ---------- scenario ---------- */
+function genScenario(set){
+  for (let t=0; t<3000; t++){
+    const isWest = false; // 出題は常に南4局
+    const round = isWest ? {wind:'西', num:1+rand(4)} : {wind:'南', num:4};
+    const dealer = round.num - 1;
+    const honba = pickW([0,1,2,3,4,5],[38,26,17,11,6,2]);
+    const left = pickW([0,1,2],[62,27,11]);
+    const total = 100000 - 1000*left;
+    const sd = isWest ? 4500 : 10500;
+    let s = [0,1,2,3].map(() => 25000 + Math.round(gauss()*sd/100)*100);
+    let diff = total - s.reduce((a,b)=>a+b,0);
+    const each = Math.trunc(diff/400)*100;
+    s = s.map(v => v + each);
+    diff = total - s.reduce((a,b)=>a+b,0);
+    s[rand(4)] += diff;
+    if (s.some(v => v < 1000)) continue;
+    if (isWest && s.some(v => v >= 30000)) continue;
+    const nonDealer = [0,1,2,3].filter(i => i !== dealer);
+    const me = nonDealer[rand(3)];
+    let riichi = [];
+    const doR = set.riichi === 'always' || (set.riichi === 'random' && Math.random() < 0.5);
+    if (doR){ const cand = [0,1,2,3].filter(i => i !== me && s[i] >= 1000); if (cand.length) riichi = [cand[rand(cand.length)]]; }
+    const scores = s.slice(); riichi.forEach(i => scores[i] -= 1000);
+    const kyotaku = left + riichi.length;
+    const rk = ranks(scores);
+    if (rk[me] === 1) continue;
+    const target = scores.findIndex((_,i) => rk[i] === rk[me]-1);
+    const gap = scores[target] - scores[me];
+    if (gap > 22000 && Math.random() < 0.9) continue;
+    if (gap > 14000 && Math.random() < 0.4) continue;
+    const others = [0,1,2,3].filter(i => i !== me && i !== target);
+    const rOther = others.filter(i => riichi.includes(i));
+    const third = rOther.length ? rOther[0] : others[rand(2)];
+    return {round, dealer, me, target, third, scores, honba, kyotaku, riichi, west:set.west};
+  }
+  return null;
+}
+function makeQuestions(sc){
+  return [{type:'tsumo'},{type:'direct', from:sc.target},{type:'deai', from:sc.third}].map(q => {
+    const opts = q.type === 'tsumo' ? TSUMO : RON;
+    const results = opts.map(o => evaluate(sc, q, o));
+    const correct = results.findIndex(r => r.status === 'up');
+    return Object.assign(q, {opts, results, correct, answer:null, time:null, start:null});
+  });
+}
+
+/* ---------- labels ---------- */
+let S = null;
+const pos = seat => (seat - S.sc.me + 4) % 4;
+const windOf = seat => WINDS[(seat - S.sc.dealer + 4) % 4];
+const seatLabel = seat => `${REL[pos(seat)]}（${windOf(seat)}家）`;
+const roundName = sc => `${sc.round.wind}${sc.round.num}局`;
+const contWord = sc => sc.round.wind === '南' ? '西入' : '続行';
+
+/* ---------- render: table ---------- */
+let prevScores = null;
+function renderTable(){
+  const sc = S.sc, rk = ranks(sc.scores);
+  let seats = '', ps = '';
+  for (let seat=0; seat<4; seat++){
+    const p = pos(seat), w = windOf(seat);
+    const tags = [`<span class="tag rank">${rk[seat]}位</span>`];
+    if (seat === sc.target) tags.push('<span class="tag tgt">目標</span>');
+    if (seat === 0) tags.push('<span class="tag">起家</span>');
+    const riichi = sc.riichi.includes(seat) ? '<div class="riichi"><i class="stick r1000" aria-hidden="true"></i>リーチ</div>' : '';
+    seats += `<div class="seat p${p}"><div class="seat-name">${p===0?'あなた':REL[p]}<small>${w}家</small></div><div class="seat-tags">${tags.join('')}</div>${riichi}</div>`;
+    ps += `<div class="ps p${p}${p===0?' me':''}"><span class="w${seat===sc.dealer?' dealer':''}">${w}</span><span class="num" data-seat="${seat}">${sc.scores[seat]}</span></div>`;
+  }
+  const pots = `<div class="pots">
+    <span class="pot"><i class="stick h100" aria-hidden="true"></i>${sc.honba}本場</span>
+    <span class="pot"><i class="stick r1000" aria-hidden="true"></i>供託${sc.kyotaku}</span></div>`;
+  document.getElementById('table').innerHTML = seats + `<div class="panel">${ps}<div class="pc"><div class="round">${roundName(sc)}</div>${pots}</div></div>`;
+  if (prevScores && !reduceMotion){
+    document.querySelectorAll('.num').forEach(el => {
+      const seat = +el.dataset.seat, from = prevScores[seat], to = sc.scores[seat];
+      if (from === to) return;
+      const t0 = performance.now(), dur = 450;
+      const step = now => { const k = Math.min(1,(now-t0)/dur), e = 1-Math.pow(1-k,3); el.textContent = Math.round((from+(to-from)*e)/100)*100; if (k<1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }
+  prevScores = sc.scores.slice();
+}
+
+/* ---------- render: stats ---------- */
+function renderStats(){
+  const rate = stats.n ? Math.round(stats.ok/stats.n*100) + '%' : '—';
+  const avg = stats.n ? (stats.timeSum/stats.n).toFixed(1) + '秒' : '—';
+  document.getElementById('stats').innerHTML =
+    `<span>正解率<b>${rate}</b></span><span>回答<b>${stats.ok}/${stats.n}</b></span><span>連続正解<b>${stats.streak}</b></span><span>最高<b>${stats.best}</b></span><span>平均<b>${avg}</b></span>` +
+    `<button class="reset" id="reset-stats" type="button">成績をリセット</button>`;
+}
+
+/* ---------- render: question ---------- */
+const STEP_NAMES = ['ツモ','直撃','出アガリ'];
+function questionTitle(q){
+  const sc = S.sc;
+  if (q.type === 'tsumo') return 'ツモアガリなら、最低いくつ？';
+  if (q.type === 'direct') return `<span class="who">${seatLabel(q.from)}</span>から直撃なら？`;
+  return `${seatLabel(q.from)}${sc.riichi.includes(q.from)?'のリーチ':''}から出アガリなら？`;
+}
+function questionSub(){
+  const sc = S.sc;
+  if (!sc.west) return '順位が上がる最低打点を選ぶ（役満でも届かなければ「不可能」）';
+  if (sc.round.wind === '西' && sc.round.num === 4) return '西4局なので必ず終局。順位が上がる最低打点を選ぶ';
+  return `順位が上がり、かつ誰かが30,000点以上で終局する最低打点を選ぶ（届かなければ${contWord(sc)}）`;
+}
+function markFor(st){ return st === 'up' ? '○' : st === 'cont' ? '△' : ''; }
+
+function renderQuestion(){
+  const sc = S.sc, q = S.qs[S.idx], answered = q.answer !== null;
+  if (!answered && q.start === null) q.start = performance.now();
+  const steps = S.qs.map((qq,i) => {
+    const done = qq.answer !== null, ok = done && qq.answer === qq.correct;
+    const reachable = done || i === S.idx || (i > 0 && S.qs[i-1].answer !== null);
+    return `<button type="button" class="step${i===S.idx?' is-current':''}" data-step="${i}" ${reachable?'':'disabled'}>${STEP_NAMES[i]}<span class="mk ${done?(ok?'ok':'ng'):''}">${done?(ok?'○':'×'):''}</span></button>`;
+  }).join('');
+
+  const chips = q.opts.map((o,i) => {
+    const r = q.results[i];
+    const cls = ['chip'];
+    if (answered){ cls.push('st-'+r.status); if (i===q.correct) cls.push('is-correct'); if (i===q.answer){ cls.push('is-picked'); if (i!==q.correct) cls.push('is-wrong'); } }
+    return `<button type="button" class="${cls.join(' ')}" data-opt="${i}" ${answered?'disabled':''}>${answered?`<span class="mark">${markFor(r.status)}</span>`:''}<span class="v">${o.label}</span><span class="s">${o.sub}</span></button>`;
+  }).join('');
+  const impCls = ['chip','wide'];
+  if (answered){ impCls.push('st-no'); if (q.correct===-1) impCls.push('is-correct'); if (q.answer===-1){ impCls.push('is-picked'); if (q.correct!==-1) impCls.push('is-wrong'); } }
+  const imp = `<button type="button" class="${impCls.join(' ')}" data-opt="-1" ${answered?'disabled':''}><span class="v">不可能</span><span class="s">役満でも届かない</span></button>`;
+
+  const hasCont = q.results.some(r => r.status === 'cont');
+  const legend = answered ? `<div class="legend"><span class="l-up">○ 順位up・終局</span>${hasCont?`<span class="l-cont">△ 順位upだが${contWord(sc)}</span>`:''}<span class="l-no">届かない</span></div>` : '';
+
+  const last = S.idx === 2;
+  const actions = `<div class="q-actions"><button type="button" class="btn ghost" id="skip">この問題を飛ばす</button>${answered?`<button type="button" class="btn primary" id="next">${last?'次の問題へ':'次の設問へ'}</button>`:''}</div>`;
+
+  document.getElementById('qcard').innerHTML =
+    `<div class="q-head"><div class="steps">${steps}</div><span class="timer" id="timer">${answered?q.time.toFixed(1)+'秒':'0.0秒'}</span></div>
+     <h2 class="q-title">${questionTitle(q)}</h2>
+     <p class="q-sub">${questionSub()}</p>
+     <div class="chips${answered?' answered':''}">${chips}${imp}</div>
+     ${legend}
+     ${answered ? feedbackHTML(q) : ''}
+     ${actions}`;
+  if (answered){ const nb = document.getElementById('next'); if (nb) nb.focus({preventScroll:true}); }
+}
+
+function feedbackHTML(q){
+  const sc = S.sc, me = sc.me, t = sc.target;
+  const ok = q.answer === q.correct;
+  const corr = q.correct >= 0 ? q.opts[q.correct] : null;
+  const corrText = corr ? `${corr.label}<small>${corr.limit ? corr.ex[0] : corr.ex.slice(0,3).join(' ／ ')}</small>` : `不可能<small>役満でも届かない</small>`;
+
+  const D = sc.scores[t] - sc.scores[me];
+  const mePri = me < t;
+  const lines = [];
+  lines.push(`目標の${seatLabel(t)}との点差は <b>${fmt(D)}</b>。同点なら${mePri?'あなた':'相手'}が上位なので、差を<b>${fmt(D)}${mePri?'以上':'より多く'}</b>縮めれば逆転。`);
+
+  const idxs = [];
+  if (q.correct > 0) idxs.push(q.correct - 1);
+  if (q.correct >= 0) idxs.push(q.correct); else idxs.push(q.opts.length - 1);
+  for (const i of idxs){
+    const o = q.opts[i], r = q.results[i];
+    const gain = r.after[me] - sc.scores[me], loss = sc.scores[t] - r.after[t], shrink = gain + loss;
+    const parts = [];
+    if (q.type === 'tsumo'){
+      const tot = o.c*2 + o.d;
+      parts.push(`ツモ${fmt(tot)}`);
+    } else parts.push(`${fmt(o.value)}`);
+    if (sc.honba) parts.push(`積み棒${fmt(300*sc.honba)}`);
+    if (sc.kyotaku) parts.push(`供託${fmt(1000*sc.kyotaku)}`);
+    const passT = r.ra[me] < r.ra[t];
+    let res;
+    if (r.status === 'up') res = `<span class="res-ok">○ 順位up</span>`;
+    else if (r.status === 'cont') res = `<span class="res-cont">△ ${contWord(sc)}</span>`;
+    else res = `<span class="res-ng">× 届かない</span>`;
+    let memo = '';
+    if (r.status !== 'no' && !passT){
+      const passed = [0,1,2,3].filter(x => x!==me && r.rb[x] < r.rb[me] && r.ra[x] > r.ra[me]).map(seatLabel).join('・');
+      memo = `<span class="memo">（目標ではなく${passed}を逆転）</span>`;
+    }
+    if (r.status === 'cont') memo += `<span class="memo">（誰も30,000点に届かず${contWord(sc)}）</span>`;
+    const lossTxt = loss ? ` ＋ 相手 −${fmt(loss)}` : '（相手は払わない）';
+    lines.push(`<b>${o.label}</b>：あなた +${fmt(gain)}${parts.length>1?`〈${parts.join('+')}〉`:''}${lossTxt} ＝ <b>${fmt(shrink)}</b> 縮まる → ${res}${memo}`);
+  }
+  if (q.type !== 'tsumo' && q.from !== t && q.correct >= 0){
+    lines.push(`<span class="memo">出アガリは相手との差が縮まらない分、直撃の約2倍の打点が必要。</span>`);
+  }
+
+  const showIdx = q.correct >= 0 ? q.correct : q.opts.length - 1;
+  const r = q.results[showIdx], o = q.opts[showIdx];
+  const rows = [0,1,2,3].map(p => (me + p) % 4).map(seat => {
+    const d = r.after[seat] - sc.scores[seat];
+    const tags = [];
+    if (seat === t) tags.push('目標');
+    if (q.type !== 'tsumo' && seat === q.from && seat !== t) tags.push('放銃');
+    if (q.type === 'direct' && seat === q.from) tags.push('放銃');
+    return `<tr class="${seat===me?'me':''}"><td>${seat===me?'あなた':REL[pos(seat)]}（${windOf(seat)}）${tags.length?' '+tags.join('・'):''}</td><td>${fmt(sc.scores[seat])}</td><td class="${d>0?'dplus':d<0?'dminus':''}">${d>0?'+':''}${d?fmt(d):'±0'}</td><td>${fmt(r.after[seat])}</td><td>${r.rb[seat]}位→${r.ra[seat]}位</td></tr>`;
+  }).join('');
+  const table = `<div class="tbl-wrap"><table class="after"><caption>${o.label}${q.type==='tsumo'?'ツモ':'アガリ'}後の点数${q.correct<0?'（役満でも届かない例）':''}</caption>
+    <thead><tr><th>席</th><th>現在</th><th>増減</th><th>終了後</th><th>順位</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+
+  return `<div class="feedback">
+    <div class="verdict"><span class="big ${ok?'ok':'ng'}">${ok?'正解':'不正解'}</span><span class="ans">正解：${corrText}</span></div>
+    <ul class="calc">${lines.map(l=>`<li>${l}</li>`).join('')}</ul>
+    ${table}
+  </div>`;
+}
+
+/* ---------- flow ---------- */
+let timerId = null;
+function tick(){
+  const q = S && S.qs[S.idx], el = document.getElementById('timer');
+  if (!q || !el || q.answer !== null || q.start === null) return;
+  el.textContent = ((performance.now() - q.start)/1000).toFixed(1) + '秒';
+}
+function newProblem(){
+  const sc = genScenario(settings);
+  S = {sc, qs: makeQuestions(sc), idx: 0};
+  renderTable(); renderQuestion();
+}
+function answer(i){
+  const q = S.qs[S.idx];
+  if (q.answer !== null) return;
+  q.answer = i;
+  q.time = (performance.now() - q.start)/1000;
+  const ok = i === q.correct;
+  stats.n++; stats.timeSum += q.time;
+  if (ok){ stats.ok++; stats.streak++; stats.best = Math.max(stats.best, stats.streak); } else stats.streak = 0;
+  save(); renderStats(); renderQuestion();
+}
+
+document.getElementById('qcard').addEventListener('click', e => {
+  const chip = e.target.closest('[data-opt]');
+  if (chip && !chip.disabled){ answer(+chip.dataset.opt); return; }
+  const step = e.target.closest('[data-step]');
+  if (step && !step.disabled){ S.idx = +step.dataset.step; renderQuestion(); return; }
+  if (e.target.closest('#next')){ if (S.idx < 2){ S.idx++; renderQuestion(); } else newProblem(); return; }
+  if (e.target.closest('#skip')) newProblem();
+});
+document.getElementById('stats').addEventListener('click', e => {
+  if (e.target.closest('#reset-stats')){ stats = {n:0, ok:0, streak:0, best:0, timeSum:0}; save(); renderStats(); }
+});
+const westEl = document.getElementById('opt-west'), riichiEl = document.getElementById('opt-riichi');
+westEl.checked = settings.west; riichiEl.value = settings.riichi;
+westEl.addEventListener('change', () => { settings.west = westEl.checked; save(); newProblem(); });
+riichiEl.addEventListener('change', () => { settings.riichi = riichiEl.value; save(); newProblem(); });
+
+renderStats();
+newProblem();
+timerId = setInterval(tick, 100);
+})();
+</script>
+
+</body>
+</html>
