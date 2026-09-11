@@ -311,7 +311,9 @@ function genScenario(set){
     const round = isWest ? {wind:'西', num:1+rand(4)} : {wind:'南', num:4};
     const dealer = round.num - 1;
     const honba = pickW([0,1,2,3,4,5],[38,26,17,11,6,2]);
-    const left = pickW([0,1,2],[62,27,11]);
+    // 前局からの供託は流局でしか残らない。流局すると本場が積まれるので、0本場なら持ち越し供託は0本。
+    // 持ち越しは本場数×2本・最大3本まで
+    const left = honba === 0 ? 0 : Math.min(pickW([0,1,2,3],[45,33,16,6]), honba*2);
     const total = 100000 - 1000*left;
     const sd = isWest ? 4500 : 10500;
     let s = [0,1,2,3].map(() => 25000 + Math.round(gauss()*sd/100)*100);
