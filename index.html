@@ -40,7 +40,7 @@
 }
 
 *{box-sizing:border-box}
-body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;padding:0 16px;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;padding:0 16px;-webkit-font-smoothing:antialiased}
 button,select,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -94,7 +94,9 @@ button,select,input{font:inherit;color:inherit}
 
 .panel{grid-area:panel;background:var(--panel);border-radius:12px;box-shadow:inset 0 0 0 1px var(--panel-line), 0 0 0 3px rgba(0,0,0,.25);
   display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto 1fr auto;grid-template-areas:". pt ." "pl pc pr" ". pb .";
-  padding:3cqi;column-gap:2cqi;font-family:var(--led-font);color:var(--led)}
+  padding:3cqi;column-gap:2cqi;font-family:var(--led-font);color:var(--led);cursor:pointer;user-select:none}
+.panel:focus-visible{outline:2px solid var(--led);outline-offset:3px}
+.panel .mode{font-size:2.8cqi;line-height:1;color:var(--led-soft);letter-spacing:.12em}
 .ps{display:flex;align-items:center;justify-content:center;gap:1.2cqi;line-height:1}
 .ps.p0{grid-area:pb}.ps.p1{grid-area:pr;flex-direction:column}.ps.p2{grid-area:pt}.ps.p3{grid-area:pl;flex-direction:column}
 .ps .w{font-size:3.6cqi;color:var(--led-soft)}
@@ -202,7 +204,7 @@ table.after tr.me td{font-weight:700}
   <main class="grid">
     <section class="board" aria-label="卓">
       <div class="table" id="table"></div>
-      <p class="note">持ち点はリーチ棒を出した後の点数。供託にはこの局のリーチ棒も含む。</p>
+      <p class="note">持ち点はリーチ棒を出した後の点数。供託にはこの局のリーチ棒も含む。点数パネルを押すと自分との点差表示に切り替わる。</p>
     </section>
     <section class="qcard" id="qcard" aria-live="polite"></section>
   </main>
@@ -236,7 +238,7 @@ const KEY = 'orasu-drill-v1';
 function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ return {}; } }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify({settings, stats})); } catch(e){} }
 const stored = load();
-let settings = Object.assign({west:false, riichi:'random'}, stored.settings || {});
+let settings = Object.assign({west:false, riichi:'random', diff:false}, stored.settings || {});
 let stats = Object.assign({n:0, ok:0, streak:0, best:0, timeSum:0}, stored.stats || {});
 
 /* ---------- score tables (子) ---------- */
@@ -362,9 +364,12 @@ const roundName = sc => `${sc.round.wind}${sc.round.num}局`;
 const contWord = sc => sc.round.wind === '南' ? '西入' : '続行';
 
 /* ---------- render: table ---------- */
-let prevScores = null;
+// 点数パネルの表示値。点差モードでは他家を「相手 − 自分」の符号付きで出す（雀魂と同じ）
+function panelValues(sc){ return sc.scores.map((v,i) => settings.diff && i !== sc.me ? v - sc.scores[sc.me] : v); }
+function fmtLed(v, isDiff){ return isDiff ? (v > 0 ? '+' : v < 0 ? '-' : '±') + Math.abs(v) : String(v); }
+let prevVals = null;
 function renderTable(){
-  const sc = S.sc, rk = ranks(sc.scores);
+  const sc = S.sc, rk = ranks(sc.scores), vals = panelValues(sc);
   let seats = '', ps = '';
   for (let seat=0; seat<4; seat++){
     const p = pos(seat), w = windOf(seat);
@@ -373,22 +378,24 @@ function renderTable(){
     if (seat === 0) tags.push('<span class="tag">起家</span>');
     const riichi = sc.riichi.includes(seat) ? '<div class="riichi"><i class="stick r1000" aria-hidden="true"></i>リーチ</div>' : '';
     seats += `<div class="seat p${p}"><div class="seat-name">${p===0?'あなた':REL[p]}<small>${w}家</small></div><div class="seat-tags">${tags.join('')}</div>${riichi}</div>`;
-    ps += `<div class="ps p${p}${p===0?' me':''}"><span class="w${seat===sc.dealer?' dealer':''}">${w}</span><span class="num" data-seat="${seat}">${sc.scores[seat]}</span></div>`;
+    const isDiff = settings.diff && seat !== sc.me;
+    ps += `<div class="ps p${p}${p===0?' me':''}"><span class="w${seat===sc.dealer?' dealer':''}">${w}</span><span class="num" data-seat="${seat}"${isDiff?' data-diff':''}>${fmtLed(vals[seat], isDiff)}</span></div>`;
   }
   const pots = `<div class="pots">
     <span class="pot"><i class="stick h100" aria-hidden="true"></i>${sc.honba}本場</span>
     <span class="pot"><i class="stick r1000" aria-hidden="true"></i>供託${sc.kyotaku}</span></div>`;
-  document.getElementById('table').innerHTML = seats + `<div class="panel">${ps}<div class="pc"><div class="round">${roundName(sc)}</div>${pots}</div></div>`;
-  if (prevScores && !reduceMotion){
+  const mode = settings.diff ? '<div class="mode">点差</div>' : '';
+  document.getElementById('table').innerHTML = seats + `<div class="panel" role="button" tabindex="0" aria-pressed="${settings.diff}" title="点数／点差を切り替え">${ps}<div class="pc"><div class="round">${roundName(sc)}</div>${mode}${pots}</div></div>`;
+  if (prevVals && !reduceMotion){
     document.querySelectorAll('.num').forEach(el => {
-      const seat = +el.dataset.seat, from = prevScores[seat], to = sc.scores[seat];
+      const seat = +el.dataset.seat, from = prevVals[seat], to = vals[seat], isDiff = el.hasAttribute('data-diff');
       if (from === to) return;
       const t0 = performance.now(), dur = 450;
-      const step = now => { const k = Math.min(1,(now-t0)/dur), e = 1-Math.pow(1-k,3); el.textContent = Math.round((from+(to-from)*e)/100)*100; if (k<1) requestAnimationFrame(step); };
+      const step = now => { const k = Math.min(1,(now-t0)/dur), e = 1-Math.pow(1-k,3); el.textContent = fmtLed(Math.round((from+(to-from)*e)/100)*100, isDiff); if (k<1) requestAnimationFrame(step); };
       requestAnimationFrame(step);
     });
   }
-  prevScores = sc.scores.slice();
+  prevVals = vals;
 }
 
 /* ---------- render: stats ---------- */
@@ -548,6 +555,10 @@ document.getElementById('qcard').addEventListener('click', e => {
 document.getElementById('stats').addEventListener('click', e => {
   if (e.target.closest('#reset-stats')){ stats = {n:0, ok:0, streak:0, best:0, timeSum:0}; save(); renderStats(); }
 });
+const tableEl = document.getElementById('table');
+function toggleDiff(){ settings.diff = !settings.diff; save(); renderTable(); }
+tableEl.addEventListener('click', e => { if (e.target.closest('.panel')) toggleDiff(); });
+tableEl.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.panel')){ e.preventDefault(); toggleDiff(); } });
 const westEl = document.getElementById('opt-west'), riichiEl = document.getElementById('opt-riichi');
 westEl.checked = settings.west; riichiEl.value = settings.riichi;
 westEl.addEventListener('change', () => { settings.west = westEl.checked; save(); newProblem(); });
